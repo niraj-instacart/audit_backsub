@@ -116,25 +116,7 @@ def analyze_frames(video_path, params_hash):
     # Clear progress
     progress_ph.empty()
     
-    # Create a video file with contour overlay
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
-        output_path = temp_file.name
-    
-    # Get frame dimensions
-    height, width = frames[0].shape[:2]
-    
-    # Create video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, FPS, (width, height))
-    
-    for result in processed_frames:
-        # Convert to BGR for OpenCV
-        bgr_frame = cv2.cvtColor(result['contour_overlay'], cv2.COLOR_RGB2BGR)
-        out.write(bgr_frame)
-    
-    out.release()
-    
-    return processed_frames, output_path, sum(motion_results)
+    return processed_frames, sum(motion_results)
 
 def display_frame_analyzer(video_path):
     """
@@ -154,32 +136,16 @@ def display_frame_analyzer(video_path):
     
     # Add button to process the entire video
     if st.button("Process Entire Video"):
-        processed_frames, processed_video_path, motion_count = analyze_frames(
+        processed_frames, motion_count = analyze_frames(
             video_path, params_hash
         )
         
         # Store in session state for frame analyzer to use
         st.session_state.processed_frames = processed_frames
-        st.session_state.processed_video_path = processed_video_path
         st.session_state.has_processed = True
         
         # Show motion summary
         st.success(f"Video processed! Motion detected in {motion_count} of {total_frames} frames ({motion_count/total_frames*100:.1f}%)")
-    
-    # Display side-by-side videos if processed
-    if 'has_processed' in st.session_state and st.session_state.has_processed:
-        st.subheader("Processed Video")
-        
-        # Display side-by-side videos
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.caption("Original Video")
-            st.video(video_path)
-        
-        with col2:
-            st.caption("Background Subtraction (Contour Overlay)")
-            st.video(st.session_state.processed_video_path)
     
     # Frame-by-frame analyzer
     st.subheader("Frame Analysis")
@@ -240,7 +206,7 @@ def get_background_subtraction_params():
         # Method selection
         method = st.selectbox(
             "Background Subtraction Method",
-            ["MOG2", "KNN", "GMG"],
+            ["MOG2", "KNN"],
             help="Select the background subtraction algorithm to use"
         )
         
